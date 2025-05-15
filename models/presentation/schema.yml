@@ -1,0 +1,276 @@
+version: 2
+
+models:
+  - name: customer_retention
+    description: >
+      A comprehensive model for analyzing customer retention patterns across different dimensions.
+      This model tracks customer retention using multiple time windows (30d, 90d, 180d) and provides
+      cohort-based analysis with drillable dimensions for acquisition, product, and user attributes.
+    columns:
+      - name: cohort_month
+        description: The month when the customer cohort was created
+        tests:
+          - not_null
+          - dbt_utils.unique_combination_of_columns:
+              combination_of:
+                - cohort_month
+                - acquisition_channel
+                - acquisition_country
+                - primary_product_category
+                - user_type
+                - subscription_tier
+
+      - name: months_since_cohort
+        description: Number of months since the customer's cohort month
+        tests:
+          - not_null
+          - dbt_utils.unique_combination_of_columns:
+              combination_of:
+                - cohort_month
+                - months_since_cohort
+                - acquisition_channel
+                - acquisition_country
+
+      - name: acquisition_channel
+        description: Channel through which the customer was acquired
+        tests:
+          - not_null
+          - accepted_values:
+              values: ['organic', 'paid', 'referral', 'social', 'email', 'direct']
+
+      - name: acquisition_country
+        description: Country where the customer was acquired
+        tests:
+          - not_null
+          - dbt_utils.unique_combination_of_columns:
+              combination_of:
+                - cohort_month
+                - acquisition_country
+
+      - name: acquisition_device
+        description: Device used during customer acquisition
+        tests:
+          - accepted_values:
+              values: ['desktop', 'mobile', 'tablet', 'other']
+
+      - name: acquisition_campaign
+        description: Campaign that led to customer acquisition
+        tests:
+          - not_null
+
+      - name: user_type
+        description: Type of user (e.g., individual, business)
+        tests:
+          - not_null
+          - accepted_values:
+              values: ['individual', 'business', 'enterprise']
+
+      - name: subscription_tier
+        description: Customer's subscription tier level
+        tests:
+          - not_null
+          - accepted_values:
+              values: ['basic', 'premium', 'enterprise']
+
+      - name: account_status
+        description: Current status of the customer's account
+        tests:
+          - not_null
+          - accepted_values:
+              values: ['active', 'inactive', 'suspended', 'cancelled']
+
+      - name: preferred_language
+        description: Customer's preferred language
+        tests:
+          - not_null
+
+      - name: timezone
+        description: Customer's timezone
+        tests:
+          - not_null
+
+      - name: is_verified
+        description: Whether the customer's account is verified
+        tests:
+          - not_null
+
+      - name: has_completed_onboarding
+        description: Whether the customer has completed onboarding
+        tests:
+          - not_null
+
+      - name: preferred_payment_method
+        description: Customer's preferred payment method
+        tests:
+          - not_null
+          - accepted_values:
+              values: ['credit_card', 'debit_card', 'paypal', 'bank_transfer']
+
+      - name: marketing_opt_in
+        description: Whether the customer has opted into marketing
+        tests:
+          - not_null
+
+      - name: primary_product_category
+        description: Primary product category for the customer
+        tests:
+          - not_null
+          - relationships:
+              to: ref('stg_products')
+              field: product_category
+
+      - name: primary_product_type
+        description: Primary product type for the customer
+        tests:
+          - not_null
+          - relationships:
+              to: ref('stg_products')
+              field: product_type
+
+      - name: has_prescription_required
+        description: Whether the customer's product requires a prescription
+        tests:
+          - not_null
+
+      - name: requires_doctor_approval
+        description: Whether the customer's product requires doctor approval
+        tests:
+          - not_null
+
+      - name: current_payment_frequency
+        description: Customer's current payment frequency
+        tests:
+          - not_null
+          - accepted_values:
+              values: ['monthly', 'quarterly', 'annual']
+
+      - name: has_auto_renew
+        description: Whether the customer has auto-renewal enabled
+        tests:
+          - not_null
+
+      - name: total_customers
+        description: Total number of customers in the cohort
+        tests:
+          - not_null
+          - dbt_utils.expression_is_true:
+              expression: ">= 0"
+
+      - name: active_customers_30d
+        description: Number of customers active in the last 30 days
+        tests:
+          - not_null
+          - dbt_utils.expression_is_true:
+              expression: ">= 0"
+          - dbt_utils.expression_is_true:
+              expression: "<= total_customers"
+
+      - name: active_customers_90d
+        description: Number of customers active in the last 90 days
+        tests:
+          - not_null
+          - dbt_utils.expression_is_true:
+              expression: ">= 0"
+          - dbt_utils.expression_is_true:
+              expression: "<= total_customers"
+
+      - name: active_customers_180d
+        description: Number of customers active in the last 180 days
+        tests:
+          - not_null
+          - dbt_utils.expression_is_true:
+              expression: ">= 0"
+          - dbt_utils.expression_is_true:
+              expression: "<= total_customers"
+
+      - name: retention_rate_30d
+        description: 30-day retention rate
+        tests:
+          - not_null
+          - dbt_utils.expression_is_true:
+              expression: ">= 0"
+          - dbt_utils.expression_is_true:
+              expression: "<= 100"
+
+      - name: retention_rate_90d
+        description: 90-day retention rate
+        tests:
+          - not_null
+          - dbt_utils.expression_is_true:
+              expression: ">= 0"
+          - dbt_utils.expression_is_true:
+              expression: "<= 100"
+
+      - name: retention_rate_180d
+        description: 180-day retention rate
+        tests:
+          - not_null
+          - dbt_utils.expression_is_true:
+              expression: ">= 0"
+          - dbt_utils.expression_is_true:
+              expression: "<= 100"
+
+      - name: avg_subscriptions_per_customer
+        description: Average number of subscriptions per customer
+        tests:
+          - not_null
+          - dbt_utils.expression_is_true:
+              expression: ">= 0"
+
+      - name: avg_active_subscriptions_per_customer
+        description: Average number of active subscriptions per customer
+        tests:
+          - not_null
+          - dbt_utils.expression_is_true:
+              expression: ">= 0"
+          - dbt_utils.expression_is_true:
+              expression: "<= avg_subscriptions_per_customer"
+
+      - name: avg_customer_lifetime_days
+        description: Average customer lifetime in days
+        tests:
+          - not_null
+          - dbt_utils.expression_is_true:
+              expression: ">= 0"
+
+      - name: avg_days_since_last_activity
+        description: Average days since last customer activity
+        tests:
+          - not_null
+          - dbt_utils.expression_is_true:
+              expression: ">= 0"
+          - dbt_utils.expression_is_true:
+              expression: "<= avg_customer_lifetime_days"
+
+      - name: churn_rate_30d
+        description: 30-day churn rate
+        tests:
+          - not_null
+          - dbt_utils.expression_is_true:
+              expression: ">= 0"
+          - dbt_utils.expression_is_true:
+              expression: "<= 100"
+          - dbt_utils.expression_is_true:
+              expression: "= 100 - retention_rate_30d"
+
+      - name: churn_rate_90d
+        description: 90-day churn rate
+        tests:
+          - not_null
+          - dbt_utils.expression_is_true:
+              expression: ">= 0"
+          - dbt_utils.expression_is_true:
+              expression: "<= 100"
+          - dbt_utils.expression_is_true:
+              expression: "= 100 - retention_rate_90d"
+
+      - name: churn_rate_180d
+        description: 180-day churn rate
+        tests:
+          - not_null
+          - dbt_utils.expression_is_true:
+              expression: ">= 0"
+          - dbt_utils.expression_is_true:
+              expression: "<= 100"
+          - dbt_utils.expression_is_true:
+              expression: "= 100 - retention_rate_180d" 

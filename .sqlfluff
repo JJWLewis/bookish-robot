@@ -1,0 +1,5 @@
+[sqlfluff]
+
+dialect = bigquery
+
+# Passively aggressively argue about standards by commiting here!

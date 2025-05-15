@@ -1,0 +1,205 @@
+version: 2
+
+models:
+  - name: dim_customers
+    description: "Dimension table containing customer information and metrics"
+    columns:
+      - name: customer_id
+        description: "Primary key for customers"
+        tests:
+          - unique
+          - not_null
+      - name: first_order
+        description: "Date of the customer's first order"
+      - name: most_recent_order
+        description: "Date of the customer's most recent order"
+      - name: number_of_orders
+        description: "Total number of orders placed by the customer"
+      - name: customer_lifetime_value
+        description: "Total amount spent by the customer"
+      - name: customer_age_days
+        description: "Number of days since the customer's first order"
+      - name: customer_tenure_days
+        description: "Number of days between first and most recent order"
+      - name: customer_segment
+        description: "Customer segment based on order volume (high_value, medium_value, low_value)"
+      - name: customer_status
+        description: "Current status of the customer (active, at_risk, inactive)"
+
+  - name: dim_products
+    description: "Dimension table containing product information"
+    columns:
+      - name: product_id
+        description: "Primary key for products"
+        tests:
+          - unique
+          - not_null
+      - name: product_name
+        description: "Name of the product"
+      - name: product_category
+        description: "Category of the product (preventive, chronic, etc.)"
+      - name: product_type
+        description: "Type of product (subscription vs one-time)"
+      - name: is_prescription_required
+        description: "Whether the product requires a prescription"
+      - name: requires_doctor_approval
+        description: "Whether the product requires doctor approval"
+      - name: monthly_price
+        description: "Monthly price of the product"
+      - name: annual_price
+        description: "Annual price of the product"
+
+  - name: dim_subscriptions
+    description: "Dimension table containing subscription information"
+    columns:
+      - name: subscription_id
+        description: "Primary key for subscriptions"
+        tests:
+          - unique
+          - not_null
+      - name: customer_id
+        description: "Foreign key to customers table"
+        tests:
+          - not_null
+      - name: product_id
+        description: "Foreign key to products table"
+        tests:
+          - not_null
+      - name: subscription_start_date
+        description: "Date when the subscription started"
+      - name: subscription_end_date
+        description: "Date when the subscription ended"
+      - name: subscription_status
+        description: "Current status of the subscription"
+      - name: payment_frequency
+        description: "Frequency of payments (monthly, annual, etc.)"
+      - name: auto_renew
+        description: "Whether the subscription auto-renews"
+      - name: subscription_health
+        description: "Health status of the subscription (healthy, at_risk, churned)"
+
+  - name: fct_subscription_metrics
+    description: "Fact table containing daily subscription metrics"
+    columns:
+      - name: subscription_id
+        description: "Foreign key to subscriptions table"
+        tests:
+          - not_null
+      - name: customer_id
+        description: "Foreign key to customers table"
+        tests:
+          - not_null
+      - name: product_id
+        description: "Foreign key to products table"
+        tests:
+          - not_null
+      - name: metric_date
+        description: "Date of the metric"
+        tests:
+          - not_null
+      - name: subscription_age_days
+        description: "Age of the subscription in days"
+      - name: subscription_duration_days
+        description: "Total duration of the subscription in days"
+      - name: days_until_next_payment
+        description: "Days until the next payment is due"
+      - name: is_active
+        description: "Whether the subscription is active"
+      - name: is_cancelled
+        description: "Whether the subscription is cancelled"
+      - name: is_expired
+        description: "Whether the subscription is expired"
+      - name: payment_status
+        description: "Current payment status"
+      - name: subscription_health
+        description: "Health status of the subscription"
+
+  - name: fct_customer_acquisition
+    description: "Fact table containing customer acquisition metrics and related performance indicators"
+    columns:
+      - name: customer_id
+        description: "Primary key for customers"
+        tests:
+          - unique
+          - not_null
+          - relationships:
+              to: ref('stg_customers')
+              field: customer_id
+      - name: acquisition_date
+        description: "Date when the customer was acquired"
+        tests:
+          - not_null
+          - dbt_utils.expression_is_true:
+              expression: "<= CURRENT_DATE()"
+      - name: acquisition_channel
+        description: "Channel through which the customer was acquired"
+        tests:
+          - not_null
+          - accepted_values:
+              values: ['organic', 'paid', 'referral', 'social', 'email', 'direct']
+      - name: acquisition_country
+        description: "Country where the customer was acquired"
+        tests:
+          - not_null
+      - name: acquisition_device
+        description: "Device used during customer acquisition"
+        tests:
+          - accepted_values:
+              values: ['desktop', 'mobile', 'tablet', 'other']
+      - name: acquisition_campaign
+        description: "Marketing campaign that led to acquisition"
+      - name: first_order
+        description: "Date of the customer's first order"
+        tests:
+          - dbt_utils.expression_is_true:
+              expression: "IS NULL OR first_order >= acquisition_date"
+      - name: most_recent_order
+        description: "Date of the customer's most recent order"
+        tests:
+          - dbt_utils.expression_is_true:
+              expression: "IS NULL OR most_recent_order >= first_order"
+      - name: number_of_orders
+        description: "Total number of orders placed by the customer"
+        tests:
+          - dbt_utils.expression_is_true:
+              expression: ">= 0"
+      - name: customer_lifetime_value
+        description: "Total amount spent by the customer"
+        tests:
+          - dbt_utils.expression_is_true:
+              expression: ">= 0"
+      - name: total_subscriptions
+        description: "Total number of subscriptions the customer has had"
+        tests:
+          - dbt_utils.expression_is_true:
+              expression: ">= 0"
+      - name: active_subscriptions
+        description: "Number of currently active subscriptions"
+        tests:
+          - dbt_utils.expression_is_true:
+              expression: ">= 0"
+          - dbt_utils.expression_is_true:
+              expression: "<= total_subscriptions"
+      - name: current_payment_frequency
+        description: "Payment frequency of active subscriptions"
+        tests:
+          - accepted_values:
+              values: ['monthly', 'quarterly', 'annual', null]
+      - name: days_since_acquisition
+        description: "Number of days since customer acquisition"
+        tests:
+          - dbt_utils.expression_is_true:
+              expression: ">= 0"
+      - name: days_to_first_order
+        description: "Number of days between acquisition and first order"
+        tests:
+          - dbt_utils.expression_is_true:
+              expression: "IS NULL OR days_to_first_order >= 0"
+      - name: has_active_subscription
+        description: "Whether the customer has any active subscriptions"
+        tests:
+          - not_null
+      - name: has_placed_order
+        description: "Whether the customer has placed any orders"
+        tests:
+          - not_null 

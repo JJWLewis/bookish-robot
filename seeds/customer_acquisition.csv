@@ -1,0 +1,6 @@
+customer_id,acquisition_date,acquisition_channel,acquisition_source,acquisition_campaign,acquisition_device,acquisition_country,acquisition_city,acquisition_region,acquisition_platform,acquisition_medium,acquisition_term,acquisition_content,acquisition_cost
+1,2024-01-01,Organic Search,Google,Brand,Mobile,US,New York,NY,Web,organic,health plan,homepage,0.00
+2,2024-01-02,Paid Search,Google,Generic,Desktop,US,Los Angeles,CA,Web,cpc,health insurance,landing page,5.00
+3,2024-01-03,Social,Facebook,Awareness,Mobile,US,Chicago,IL,Mobile,social,healthcare,post,2.50
+4,2024-01-04,Referral,Partner,Affiliate,Desktop,US,Houston,TX,Web,referral,health plan,partner page,3.00
+5,2024-01-05,Direct,Direct,Brand,Mobile,US,Phoenix,AZ,Mobile,none,health insurance,direct,0.00 

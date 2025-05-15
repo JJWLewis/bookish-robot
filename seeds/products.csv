@@ -1,0 +1,9 @@
+product_id,product_name,product_category,product_type,monthly_price,annual_price,is_prescription_required,requires_doctor_approval,product_description,created_at,updated_at
+1,Basic Health Plan,preventive,subscription,49.99,499.99,false,false,Basic preventive healthcare coverage,2023-01-01,2024-03-15
+2,Premium Health Plan,preventive,subscription,99.99,999.99,false,false,Comprehensive preventive healthcare coverage,2023-01-01,2024-03-15
+3,Chronic Care Plan,chronic,subscription,149.99,1499.99,true,true,Specialized care for chronic conditions,2023-01-01,2024-03-15
+4,Telehealth Service,consultation,subscription,29.99,299.99,false,false,24/7 virtual doctor consultations,2023-01-01,2024-03-15
+5,Medication Delivery,pharmacy,subscription,39.99,399.99,true,true,Prescription medication delivery service,2023-01-01,2024-03-15
+6,Health Monitoring Kit,device,one-time,199.99,199.99,false,false,Home health monitoring equipment,2023-01-01,2024-03-15
+7,Specialist Consultation,consultation,one-time,199.99,199.99,true,true,One-time specialist doctor consultation,2023-01-01,2024-03-15
+8,Lab Test Package,diagnostic,subscription,79.99,799.99,false,false,Regular health check-up package,2023-01-01,2024-03-15 

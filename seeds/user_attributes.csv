@@ -1,0 +1,6 @@
+customer_id,user_created_at,user_type,subscription_tier,account_status,last_login_date,preferred_language,timezone,is_verified,account_age_days,has_completed_onboarding,preferred_payment_method,marketing_opt_in,attribute_name,attribute_value,attribute_source,attribute_confidence,attribute_last_updated
+1,2023-01-01,premium,gold,active,2024-03-15,en_US,America/New_York,true,440,true,credit_card,true,age_group,35-44,Profile,0.95,2024-01-01
+2,2023-01-02,standard,silver,active,2024-03-14,en_GB,Europe/London,true,438,true,bank_transfer,false,income_range,100k-150k,Survey,0.85,2024-01-02
+3,2023-01-03,premium,platinum,active,2024-03-13,fr_CA,America/Toronto,true,437,true,credit_card,true,family_size,4,Profile,0.90,2024-01-03
+4,2023-01-04,standard,bronze,inactive,2024-02-15,en_AU,Australia/Sydney,true,436,false,paypal,true,health_condition,None,Medical,0.98,2024-01-04
+5,2023-01-05,premium,gold,active,2024-03-12,de_DE,Europe/Berlin,true,435,true,credit_card,false,preferred_contact,Email,Profile,0.99,2024-01-05 

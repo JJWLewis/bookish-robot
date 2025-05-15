@@ -1,0 +1,224 @@
+version: 2
+
+# In general my approach is very 'data contract' focussed when crossing tool/domain boundaries, so test
+# heavily on the way in, they only on specific custom logic later on.
+# I haven't used dbt's default contracts here for ease.
+# Additionally they are the only 'native' way of adding bigquery constraints which are hugely valuable
+# albeit risky as not enforced by the DB.
+
+models:
+  - name: stg_customers
+    #config:
+    #  contract:
+    #    enforced: true
+    description: "Staging model for customer data"
+    columns:
+      - name: customer_id
+        description: "Primary key for customers"
+        tests:
+          - unique
+          - not_null
+          - dbt_utils.expression_is_true:
+              expression: "> 0"
+      - name: first_order
+        description: "Date of the customer's first order"
+        tests:
+          - not_null
+          - dbt_utils.expression_is_true:
+              expression: "<= CURRENT_DATE()"
+      - name: most_recent_order
+        description: "Date of the customer's most recent order"
+        tests:
+          - not_null
+          - dbt_utils.expression_is_true:
+              expression: ">= first_order"
+          - dbt_utils.expression_is_true:
+              expression: "<= CURRENT_DATE()"
+      - name: number_of_orders
+        description: "Total number of orders placed by the customer"
+        tests:
+          - not_null
+          - dbt_utils.expression_is_true:
+              expression: ">= 0"
+      - name: customer_lifetime_value
+        description: "Total amount spent by the customer"
+        tests:
+          - not_null
+          - dbt_utils.expression_is_true:
+              expression: ">= 0"
+          - dbt_utils.expression_is_true:
+              expression: "= COALESCE((SELECT SUM(order_total_amount) FROM {{ ref('stg_orders') }} WHERE customer_id = stg_customers.customer_id), 0)"
+
+  - name: stg_products
+    description: "Staging model for product data"
+    columns:
+      - name: product_id
+        description: "Primary key for products"
+        tests:
+          - unique
+          - not_null
+          - dbt_utils.expression_is_true:
+              expression: "> 0"
+      - name: product_name
+        description: "Name of the product"
+        tests:
+          - not_null
+          - dbt_utils.expression_is_true:
+              expression: "LENGTH(TRIM(product_name)) > 0"
+      - name: product_category
+        description: "Category of the product (preventive, chronic, etc.)"
+        tests:
+          - not_null
+          - accepted_values:
+              values: ['preventive', 'chronic', 'acute', 'supplement', 'device', 'other']
+      - name: product_type
+        description: "Type of product (subscription vs one-time)"
+        tests:
+          - not_null
+          - accepted_values:
+              values: ['subscription', 'one-time']
+      - name: is_prescription_required
+        description: "Whether the product requires a prescription"
+        tests:
+          - not_null
+      - name: requires_doctor_approval
+        description: "Whether the product requires doctor approval"
+        tests:
+          - not_null
+          - dbt_utils.expression_is_true:
+              expression: "CASE WHEN is_prescription_required THEN requires_doctor_approval ELSE TRUE END"
+      - name: monthly_price
+        description: "Monthly price of the product"
+        tests:
+          - not_null
+          - dbt_utils.expression_is_true:
+              expression: ">= 0"
+          - dbt_utils.expression_is_true:
+              expression: "CASE WHEN product_type = 'subscription' THEN monthly_price > 0 ELSE TRUE END"
+      - name: annual_price
+        description: "Annual price of the product"
+        tests:
+          - not_null
+          - dbt_utils.expression_is_true:
+              expression: ">= 0"
+          - dbt_utils.expression_is_true:
+              expression: "CASE WHEN product_type = 'subscription' THEN annual_price >= monthly_price * 12 ELSE TRUE END"
+
+  - name: stg_subscriptions
+    description: "Staging model for subscription data"
+    columns:
+      - name: subscription_id
+        description: "Primary key for subscriptions"
+        tests:
+          - unique
+          - not_null
+          - dbt_utils.expression_is_true:
+              expression: "> 0"
+      - name: customer_id
+        description: "Foreign key to customers table"
+        tests:
+          - not_null
+          - relationships:
+              to: ref('stg_customers')
+              field: customer_id
+      - name: product_id
+        description: "Foreign key to products table"
+        tests:
+          - not_null
+          - relationships:
+              to: ref('stg_products')
+              field: product_id
+      - name: subscription_start_date
+        description: "Date when the subscription started"
+        tests:
+          - not_null
+          - dbt_utils.expression_is_true:
+              expression: "<= CURRENT_DATE()"
+          - dbt_utils.expression_is_true:
+              expression: ">= (SELECT first_order FROM {{ ref('stg_customers') }} WHERE customer_id = stg_subscriptions.customer_id)"
+      - name: subscription_end_date
+        description: "Date when the subscription ended"
+        tests:
+          - dbt_utils.expression_is_true:
+              expression: "IS NULL OR subscription_end_date >= subscription_start_date"
+          - dbt_utils.expression_is_true:
+              expression: "IS NULL OR subscription_end_date <= CURRENT_DATE()"
+      - name: subscription_status
+        description: "Current status of the subscription"
+        tests:
+          - not_null
+          - accepted_values:
+              values: ['active', 'cancelled', 'expired', 'pending', 'suspended']
+          - dbt_utils.expression_is_true:
+              expression: "CASE WHEN subscription_end_date IS NOT NULL THEN subscription_status IN ('cancelled', 'expired') ELSE TRUE END"
+      - name: payment_frequency
+        description: "Frequency of payments (monthly, annual, etc.)"
+        tests:
+          - not_null
+          - accepted_values:
+              values: ['monthly', 'quarterly', 'annual']
+          - dbt_utils.expression_is_true:
+              expression: "EXISTS (SELECT 1 FROM {{ ref('stg_products') }} WHERE product_id = stg_subscriptions.product_id AND product_type = 'subscription')"
+      - name: auto_renew
+        description: "Whether the subscription auto-renews"
+        tests:
+          - not_null
+          - dbt_utils.expression_is_true:
+              expression: "CASE WHEN subscription_status = 'cancelled' THEN NOT auto_renew ELSE TRUE END"
+
+  - name: stg_orders
+    description: "Staging model for order data"
+    columns:
+      - name: order_id
+        description: "Primary key for orders"
+        tests:
+          - unique
+          - not_null
+          - dbt_utils.expression_is_true:
+              expression: "> 0"
+      - name: customer_id
+        description: "Foreign key to customers table"
+        tests:
+          - not_null
+          - relationships:
+              to: ref('stg_customers')
+              field: customer_id
+      - name: order_date
+        description: "Date when the order was placed"
+        tests:
+          - not_null
+          - dbt_utils.expression_is_true:
+              expression: "<= CURRENT_DATE()"
+          - dbt_utils.expression_is_true:
+              expression: ">= (SELECT first_order FROM {{ ref('stg_customers') }} WHERE customer_id = stg_orders.customer_id)"
+      - name: order_status
+        description: "Current status of the order"
+        tests:
+          - not_null
+          - accepted_values:
+              values: ['completed', 'pending', 'cancelled', 'refunded', 'failed']
+      - name: order_total_amount
+        description: "Total amount of the order"
+        tests:
+          - not_null
+          - dbt_utils.expression_is_true:
+              expression: ">= 0"
+      - name: order_type
+        description: "Type of order (subscription, one-time, etc.)"
+        tests:
+          - not_null
+          - accepted_values:
+              values: ['subscription', 'one-time', 'refill', 'renewal']
+      - name: order_source
+        description: "Source of the order (web, mobile, etc.)"
+        tests:
+          - not_null
+          - accepted_values:
+              values: ['web', 'mobile', 'phone', 'in-person']
+      - name: order_platform
+        description: "Platform where the order was placed"
+        tests:
+          - not_null
+          - accepted_values:
+              values: ['ios', 'android', 'web', 'pos']
+

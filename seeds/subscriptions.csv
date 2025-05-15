@@ -1,0 +1,9 @@
+subscription_id,customer_id,product_id,subscription_start_date,subscription_end_date,subscription_status,payment_frequency,auto_renew,last_payment_date,next_payment_date,doctor_approval_date,prescription_id,subscription_notes
+1,1,2,2023-01-01,2024-01-01,active,annual,true,2023-01-01,2024-01-01,,,Initial subscription
+2,1,4,2023-02-01,2024-02-01,active,monthly,true,2024-03-01,2024-04-01,,,Added telehealth service
+3,2,1,2023-01-02,2024-01-02,active,annual,true,2023-01-02,2024-01-02,,,Basic plan subscriber
+4,3,3,2023-01-03,2024-01-03,active,annual,true,2023-01-03,2024-01-03,2023-01-02,PRES123,Chronic care patient
+5,3,5,2023-02-03,2024-02-03,active,monthly,true,2024-03-03,2024-04-03,2023-02-02,PRES124,Added medication delivery
+6,4,1,2023-01-04,2024-01-04,cancelled,annual,false,2023-01-04,,,,Cancelled after 2 months
+7,5,2,2023-01-05,2024-01-05,active,annual,true,2023-01-05,2024-01-05,,,Premium plan subscriber
+8,5,8,2023-02-05,2024-02-05,active,monthly,true,2024-03-05,2024-04-05,,,Added lab tests 
